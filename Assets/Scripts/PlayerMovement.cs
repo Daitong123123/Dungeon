@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -9,21 +11,22 @@ public class PlayerMovement : MonoBehaviour
     public float jumpspeed;
     private Rigidbody rg3d;
     private Vector3 movement;
-    private int GroundType = 1;
+    private int GroundType;
     //private ConstantForce constantforce;
 
-    // Use this for initialization
+
     void Start()
     {
+        GroundType = 0;
         movement = new Vector3(0f, 0f, 0f); 
         rg3d = GetComponent<Rigidbody>();
         //constantforce = GetComponent<ConstantForce>();
     }
 
-    // Update is called once per frame
+
     void FixedUpdate()
     {
-        if(GroundType == 1)
+        if (GroundType == 1)
         {
             float moveX = Input.GetAxis("Horizontal");
             float moveZ = Input.GetAxis("Vertical");
@@ -35,13 +38,19 @@ public class PlayerMovement : MonoBehaviour
             float moveX = Input.GetAxis("Horizontal");
             float moveZ = Input.GetAxis("Vertical");
             movement = new Vector3(moveX, 0f, moveZ);
-            rg3d.velocity = 2 * movement;
+            rg3d.velocity = 2.1f * movement;
         }
         else if (GroundType == 3)
         {
             float moveX = Input.GetAxis("Horizontal");
             float moveZ = Input.GetAxis("Vertical");
             movement = new Vector3(-moveX, 0f, -moveZ);
+            rg3d.AddForce(movement * speed * 0.7f);
+        }
+
+        if(Input.GetKey(KeyCode.LeftShift) && GroundType != 0)
+        {
+            movement = new Vector3(0f, -15f, 0f);
             rg3d.AddForce(movement * speed);
         }
 
@@ -50,7 +59,7 @@ public class PlayerMovement : MonoBehaviour
         {
             if(GroundType == 1 || GroundType == 2 || GroundType == 3)
             {
-                rg3d.velocity = new Vector3(rg3d.velocity.x, jumpspeed + 0.0001f, rg3d.velocity.z);
+                rg3d.velocity = new Vector3(rg3d.velocity.x, jumpspeed, rg3d.velocity.z);
             }
         }
     }
@@ -64,6 +73,7 @@ public class PlayerMovement : MonoBehaviour
         else if(other.gameObject.CompareTag("GroundBlue"))
         {
             GroundType = 2;
+            rg3d.useGravity = false;
         }
         else if (other.gameObject.CompareTag("GroundRed"))
         {
@@ -80,6 +90,7 @@ public class PlayerMovement : MonoBehaviour
         else if (other.gameObject.CompareTag("GroundBlue"))
         {
             GroundType = 0;
+            rg3d.useGravity = true;
         }
         else if(other.gameObject.CompareTag("GroundRed"))
         {
@@ -87,16 +98,54 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("GameOver"))
+        {
+            PlayerDie();
+        }
+    }
+
     private void OnCollisionEnter(Collision other)
     {
         if (other.gameObject.CompareTag("GameOver"))
         {
-            GameObject gameoverUI = GameObject.Find("GameOverUI");
-            Animator anim;
-            anim = gameoverUI.GetComponent<Animator>();
-            anim.SetTrigger("GameOverTrigger");
+            PlayerDie();
         }
     }
 
+    public void PlayerDie()
+    {
+        if(HealthManage.LiveOrNot)
+        {
+            HealthManage.LiveOrNot = false;
+            HealthManage.PlayerHealth--;
+            StartCoroutine(ReloadScene());
+        }
+    }
+
+    IEnumerator ReloadScene()
+    {
+        GameObject gameoverUI = GameObject.Find("GameOverUI");
+        GameObject healthpoint = GameObject.Find("HealthPoint");
+        healthpoint.GetComponent<Text>().text = "× " + HealthManage.PlayerHealth.ToString();
+        Animator anim;
+        anim = gameoverUI.GetComponent<Animator>();
+        anim.SetTrigger("GameOverTrigger");
+        yield return new WaitForSeconds(2.0f);
+        anim.SetTrigger("GameOverTrigger");
+        yield return new WaitForSeconds(1.0f);
+        if (HealthManage.PlayerHealth == 0)
+        {
+            SceneManager.LoadSceneAsync("Stage1");
+            HealthManage.PlayerHealth = HealthManage.BeginningHealth;
+        }
+        else
+        {
+            ItemManage.PassOrReStart = false;
+            SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().name);
+        }
+        HealthManage.LiveOrNot = true;
+    }
 
 }
