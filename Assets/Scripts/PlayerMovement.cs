@@ -45,7 +45,14 @@ public class PlayerMovement : MonoBehaviour
             float moveX = Input.GetAxis("Horizontal");
             float moveZ = Input.GetAxis("Vertical");
             movement = new Vector3(-moveX, 0f, -moveZ);
-            rg3d.AddForce(movement * speed * 0.7f);
+            rg3d.AddForce(movement * speed * 0.8f);
+        }
+        else if(GroundType == 0)
+        {
+            float moveX = Input.GetAxis("Horizontal");
+            float moveZ = Input.GetAxis("Vertical");
+            movement = new Vector3(moveX, 0f, moveZ);
+            rg3d.AddForce(movement * speed * 0.05f);
         }
 
         if(Input.GetKey(KeyCode.LeftShift) && GroundType != 0)
@@ -118,6 +125,7 @@ public class PlayerMovement : MonoBehaviour
     {
         if(HealthManage.LiveOrNot)
         {
+            tag = null;
             HealthManage.LiveOrNot = false;
             HealthManage.PlayerHealth--;
             StartCoroutine(ReloadScene());
